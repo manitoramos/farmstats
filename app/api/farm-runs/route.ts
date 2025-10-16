@@ -18,13 +18,15 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { bossId, date, kills, chests, timeSpent, totalEarnings, notes, loot } = body
 
+    const formattedDate = normalizeDate(date)
+
     // Create the farm run
     const { data: farmRun, error: farmRunError } = await supabase
       .from("farm_runs")
       .insert({
         user_id: user.id,
         boss_id: bossId,
-        date,
+        date: formattedDate,
         kills,
         chests,
         time_spent: timeSpent,
@@ -164,3 +166,26 @@ export async function GET(request: Request) {
     )
   }
 }
+
+
+function normalizeDate(dateStr: string): string {
+  // Already ISO-like format → YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || /^\d{4}\/\d{2}\/\d{2}$/.test(dateStr)) {
+    return dateStr.replace(/\//g, "-") // ensure it's using hyphens
+  }
+
+  // European format → DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split("/")
+    return `${year}-${month}-${day}`
+  }
+
+  // If it's something else — try Date parsing as a fallback
+  const parsed = new Date(dateStr)
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split("T")[0]
+  }
+
+  throw new Error(`Invalid date format: ${dateStr}`)
+}
+
