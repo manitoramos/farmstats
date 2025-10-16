@@ -41,18 +41,25 @@ export function DailyCalendar({ selectedBoss, userId, onDaySelect }: DailyCalend
         const data = await response.json()
         const farmRuns = data.farmRuns || []
 
-        // Convert farm runs to calendar data format
         const newCalendarData: Record<string, DayData> = {}
         farmRuns.forEach((run: any) => {
           const dateObj = new Date(run.date)
           const dateKey = `${dateObj.getDate().toString().padStart(2, "0")}/${(dateObj.getMonth() + 1).toString().padStart(2, "0")}/${dateObj.getFullYear()}`
 
-          newCalendarData[dateKey] = {
-            date: dateKey,
-            kills: run.kills,
-            chests: run.chests,
-            earnings: run.total_earnings,
-            completed: true,
+          if (newCalendarData[dateKey]) {
+            // Aggregate with existing data for this day
+            newCalendarData[dateKey].kills += run.kills
+            newCalendarData[dateKey].chests += run.chests
+            newCalendarData[dateKey].earnings += run.total_earnings
+          } else {
+            // First run for this day
+            newCalendarData[dateKey] = {
+              date: dateKey,
+              kills: run.kills,
+              chests: run.chests,
+              earnings: run.total_earnings,
+              completed: true,
+            }
           }
         })
 
